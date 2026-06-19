@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Birthday, My Love ❤️</title>
+  <meta name="description" content="A magical, emotional, and beautiful journey of our love. Happy Birthday to my favorite person.">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Custom Cursor Glow -->
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <!-- Background Canvas for Particles -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Ambient Light Orbs -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <!-- SECTION 1: LOADING SCREEN -->
+  <div id="loading-screen" class="loading-overlay">
+    <div class="loader-content">
+      <div class="glowing-heart">
+        <svg viewBox="0 0 32 29.6" class="heart-svg">
+          <path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2
+            c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/>
+        </svg>
+      </div>
+      <h2 class="loader-text" id="loaderText">Loading something made with love...</h2>
+      <div class="loader-bar">
+        <div class="loader-progress" id="loaderProgress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header class="navbar-wrapper">
+    <nav class="navbar">
+      <a href="#" class="logo">
+        <span class="logo-heart">❤️</span> For My Love
+      </a>
+      
+      <!-- Audio Toggle Button -->
+      <button class="music-toggle" id="musicToggle" aria-label="Toggle Music">
+        <span class="music-label">Play Music</span>
+        <div class="sound-waves" id="soundWaves">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+    </nav>
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress-container">
+      <div class="scroll-progress-bar" id="scrollProgress"></div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main>
+    
+    <!-- SECTION 2: HERO PAGE -->
+    <section id="hero" class="hero-section">
+      <div class="hero-container container">
+        <h1 class="hero-title animate-glow">Happy Birthday, My Love ❤️</h1>
+        <p class="hero-subtitle">This is not just a website. <br>This is a small universe made for you.</p>
+        
+        <!-- Rotating Typewriter Words -->
+        <div class="typewriter-container">
+          <span class="typewriter-static">You are my</span>
+          <span class="typewriter-text" id="typewriter"></span>
+          <span class="typewriter-cursor">|</span>
+        </div>
+
+        <a href="#love-letter" class="btn-cta" id="startBtn">
+          <span>Begin Our Journey</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 21l-1.4-1.4L18.2 12H3v-2h15.2l-7.6-7.6L12 1l10 10z"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 3: LOVE LETTER -->
+    <section id="love-letter" class="section-padding">
+      <div class="container">
+        <div class="letter-card glass-card reveal">
+          <div class="card-glow-effect"></div>
+          <div class="letter-header">
+            <span class="letter-stamp">💌</span>
+            <h2 class="letter-title">A Letter For You</h2>
+          </div>
+          <div class="letter-content" id="letterContent">
+            <p class="reveal-paragraph">Before you, days were just days. They drifted by without much meaning, simple ticks of the clock in an ordinary life.</p>
+            <p class="reveal-paragraph">Then you came, and somehow, everything became brighter. The mundane turned into magic, and the quiet moments filled with warmth. You brought laughter where there was silence, and color where there was grey.</p>
+            <p class="reveal-paragraph">Thank you for being part of my life, for your warmth, and for simply being you.</p>
+            <p class="reveal-paragraph script-highlight">I love you more than words could ever express.</p>
+            <p class="reveal-paragraph letter-signature">Yours, <br><span class="handwritten-name">Forever & Always</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: MEMORY TIMELINE -->
+    <section id="timeline" class="section-padding">
+      <div class="container">
+        <h2 class="section-heading reveal">Our Story</h2>
+        <p class="section-subheading reveal">A journey of the beautiful milestones we've shared together</p>
+        
+        <div class="timeline-container">
+          <div class="timeline-line"></div>
+          
+          <!-- Card 1 -->
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-card glass-card">
+              <div class="timeline-img-wrapper">
+                <img src="assets/starry_date.png" alt="First Conversation" class="timeline-img">
+              </div>
+              <div class="timeline-info">
+                <span class="timeline-date">The Beginning</span>
+                <h3 class="timeline-title">First Conversation</h3>
+                <p class="timeline-desc">It started with a simple hello, but from that very first hour, I knew you were someone special. Hours felt like minutes as we talked about everything and nothing.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-card glass-card">
+              <div class="timeline-img-wrapper">
+                <img src="assets/holding_hands.png" alt="First Laugh" class="timeline-img">
+              </div>
+              <div class="timeline-info">
+                <span class="timeline-date">A Spark of Joy</span>
+                <h3 class="timeline-title">Moments of Spending Time Together</h3>
+                <p class="timeline-desc">The time we used to spend with each other going on wlks stuying together and talking on any topics without feeling fear of getting judged made me feel how compatible we were for each other the way u used to console me when i tell u about issues and how we used to help each other to solve our problems its just felt something bookish or old school love.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-card glass-card">
+              <div class="timeline-img-wrapper">
+                <img src="assets/couple_sunset.png" alt="Favorite Memory" class="timeline-img">
+              </div>
+              <div class="timeline-info">
+                <span class="timeline-date">Lost in Time</span>
+                <h3 class="timeline-title">My Favorite Memory</h3>
+                <p class="timeline-desc">tbh everyday from when our relationship started everything feels like a beautiful dream and and each and every passing day is becoming a very beautiful memory for me but before all of this one unintentional moment that is one of the best moment of my life when we sat holding hands in activity space it just felt so soothing and relaxing to me i felt like you are mine and we are in a safe place it was a beautiful moment for me.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-card glass-card">
+              <div class="timeline-img-wrapper">
+                <img src="assets/dreamy_garden.png" alt="Special Moment" class="timeline-img">
+              </div>
+              <div class="timeline-info">
+                <span class="timeline-date">Under the Stars</span>
+                <h3 class="timeline-title">A Special Moment</h3>
+                <p class="timeline-desc">Nothing can be more special than the moment we both agreed to enter in relationship because that i feel was the turning point of my life it cfeels like i found my soul i stopped hurting myself, doubting myself just because u came in my life u made my life a beautiful fairytale and i wish i can give u immense love and all the happiness of this world.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-card glass-card">
+              <div class="timeline-info no-img">
+                <span class="timeline-date">Right Now</span>
+                <h3 class="timeline-title">Today & Beyond</h3>
+                <p class="timeline-desc">Every day with you is a new chapter of a beautiful fairytale. I am so incredibly grateful for our past, in love with our present, and excited for our future together.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: PHOTO GALLERY -->
+    <section id="gallery" class="section-padding">
+      <div class="container">
+        <h2 class="section-heading reveal">Moments Captured in Time</h2>
+        <p class="section-subheading reveal">Hover to tilt, click to expand into full screen view</p>
+        
+        <div class="gallery-grid">
+          <!-- Polaroid 1 -->
+          <div class="polaroid-wrapper reveal" style="--rotation: -3deg;">
+            <div class="polaroid-card" data-img-src="assets/1.jpeg" data-caption="Chasing sunsets with you.">
+              <div class="polaroid-img-box">
+                <img src="assets/1.jpeg" alt="Captured Moment 1">
+              </div>
+              <p class="polaroid-text">Sunset Magic 🌅</p>
+            </div>
+          </div>
+
+          <!-- Polaroid 2 -->
+          <div class="polaroid-wrapper reveal" style="--rotation: 2deg;">
+            <div class="polaroid-card" data-img-src="assets/2.jpeg" data-caption="Countless stars, but you are the brightest.">
+              <div class="polaroid-img-box">
+                <img src="assets/2.jpeg" alt="Captured Moment 2">
+              </div>
+              <p class="polaroid-text">Under the Sky 🌌</p>
+            </div>
+          </div>
+
+          <!-- Polaroid 3 -->
+          <div class="polaroid-wrapper reveal" style="--rotation: -1.5deg;">
+            <div class="polaroid-card" data-img-src="assets/3.jpeg" data-caption="Holding your hand is holding my world.">
+              <div class="polaroid-img-box">
+                <img src="assets/3.jpeg" alt="Captured Moment 3">
+              </div>
+              <p class="polaroid-text">In Your Hands 🤝</p>
+            </div>
+          </div>
+
+          
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lightbox Modal for Gallery -->
+    <div id="lightbox" class="lightbox-overlay">
+      <span class="lightbox-close">&times;</span>
+      <div class="lightbox-container">
+        <img id="lightboxImg" src="" alt="Expanded View">
+        <p id="lightboxCaption"></p>
+      </div>
+    </div>
+
+    <!-- SECTION 6: REASONS I LOVE YOU -->
+    <section id="reasons" class="section-padding">
+      <div class="container">
+        <h2 class="section-heading reveal">Reasons I Love You</h2>
+        <p class="section-subheading reveal">Hover or tap on each card to reveal my secrets</p>
+        
+        <div class="reasons-grid">
+          <!-- Card 1 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">😊</div>
+                <h3>Your Smile</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>The way your entire face lights up, and how your smile effortlessly drives away the darkest clouds in my mind. It's my daily dose of sunshine.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🌸</div>
+                <h3>Your Kindness</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>How gently you treat the world. The warmth, empathy, and grace you show to everyone around you inspires me to be a better person every single day.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🤪</div>
+                <h3>Your Chaos</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>Your silly quirks, your spontaneous ideas, and the adorable chaos you bring into my life. Things are never boring when we are together.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🛡️</div>
+                <h3>Your Support</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>How you stand by me, believe in my dreams even when I doubt myself, and offer a safe, warm space where I can always let my guard down completely.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🤗</div>
+                <h3>The Way You Care</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>How you notice the little details, remember tiny things I mention, and check up on me when I'm tired. You have the most generous heart.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🎵</div>
+                <h3>Your Laugh</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>The absolute purest, happiest sound in the universe. It creates a ripple effect of joy inside me, and is instantly contagious every single time.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 7 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">🌠</div>
+                <h3>Your Dreams</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>The fire and passion in your eyes when you talk about the things you love and the future you want to build. I want to be right there supporting you.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 8 -->
+          <div class="flip-card reveal">
+            <div class="flip-card-inner">
+              <div class="flip-card-front glass-card">
+                <div class="card-icon">💖</div>
+                <h3>Just Being You</h3>
+              </div>
+              <div class="flip-card-back glass-card">
+                <p>Unfiltered, authentic, and perfectly imperfect. You don't need to change a single thing. You are my dream come true, exactly as you are.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: FUN SECTION -->
+    <section id="fun" class="section-padding">
+      <div class="container">
+        <h2 class="section-heading reveal">Let's Play A Game</h2>
+        <p class="section-subheading reveal">Click the interactive cards below for some love statistics and surprises</p>
+        
+        <div class="fun-cards-container">
+          <!-- Fun Card 1 -->
+          <div class="fun-card glass-card reveal">
+            <h3 class="fun-title">How much do you love me?</h3>
+            <p class="fun-desc">Let's calculate the scientific measurement of your feelings.</p>
+            <button class="btn-fun" id="loveCalcBtn">Calculate Love</button>
+            <div class="meter-wrapper" id="meterWrapper">
+              <div class="meter-heart">❤️</div>
+              <div class="love-meter">
+                <div class="love-meter-fill" id="meterFill"></div>
+              </div>
+              <div class="love-meter-value" id="meterValue">0%</div>
+            </div>
+            <p class="fun-result-text" id="loveResultText"></p>
+          </div>
+
+          <!-- Fun Card 2 -->
+          <div class="fun-card glass-card reveal">
+            <h3 class="fun-title">A Surprise For You</h3>
+            <p class="fun-desc">What lies behind this secret trigger? Click to find out!</p>
+            <button class="btn-fun" id="surpriseBtn">Click for surprise</button>
+            <div class="fun-result-text text-glow" id="surpriseResultText"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: COUNTDOWN / COUNTER -->
+    <section id="countdown" class="section-padding">
+      <div class="container">
+        <h2 class="section-heading reveal">Our Love Counter</h2>
+        <p class="section-subheading reveal">Every second spent with you is a precious gift</p>
+        
+        <div class="counter-card glass-card reveal">
+          <p class="counter-intro">We have created memories for:</p>
+          <div class="timer-grid">
+            <div class="timer-box">
+              <span class="timer-num" id="daysBox">00</span>
+              <span class="timer-label">Days</span>
+            </div>
+            <div class="timer-box">
+              <span class="timer-num" id="hoursBox">00</span>
+              <span class="timer-label">Hours</span>
+            </div>
+            <div class="timer-box">
+              <span class="timer-num" id="minutesBox">00</span>
+              <span class="timer-label">Minutes</span>
+            </div>
+            <div class="timer-box">
+              <span class="timer-num" id="secondsBox">00</span>
+              <span class="timer-label">Seconds</span>
+            </div>
+          </div>
+          <p class="counter-date">Since our journey began on June 9, 2026</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: FINAL SURPRISE -->
+    <section id="final-surprise" class="final-section">
+      <div class="final-container container">
+        <div class="cinematic-wrapper" id="cinematicText">
+          <p class="cinema-line" data-delay="1000">And if I had to choose again...</p>
+          <p class="cinema-line italic" data-delay="3500">I would still choose you.</p>
+          <p class="cinema-line bold" data-delay="6000">Again.</p>
+          <p class="cinema-line bold" data-delay="7200">And again.</p>
+          <p class="cinema-line bold" data-delay="8400">And again.</p>
+        </div>
+
+        <button class="btn-cta pulse" id="openHeartBtn" style="display: none;">
+          <span>Open My Heart</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </button>
+
+        <!-- Final Message Overlay Cards -->
+        <div class="final-overlay glass-card" id="finalMessageCard">
+          <div class="floating-emoji">💝</div>
+          <h2 class="final-title animate-glow">Happy Birthday, My Love!</h2>
+          <p class="final-body">You deserve all the happiness in the world today. I am so lucky to walk by your side in this lifetime. May this day be as beautiful, radiant, and wonderful as your soul is.</p>
+          <p class="final-signature">Forever Yours ❤️</p>
+          <button class="btn-fun" id="restartJourney">Begin Journey Again</button>
+        </div>
+      </div>
+      <!-- Dedicated Canvas for Final Fireworks/Heart Explosions -->
+      <canvas id="fireworksCanvas"></canvas>
+    </section>
+
+  </main>
+
+  <!-- Audio Element (Romantic Track Placeholder) -->
+  <audio id="bgMusic" loop preload="auto">
+    <source src="assets/romantic_bg.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Easter Egg Secret Message Overlay -->
+  <div id="easterEggModal" class="easter-egg-overlay">
+    <div class="easter-egg-card glass-card">
+      <span class="easter-close" id="easterCloseBtn">&times;</span>
+      <div class="easter-icon">💖 💌 🔒</div>
+      <h2 class="easter-title">You Found the Secret!</h2>
+      <p class="easter-body">“You typed L-O-V-E. Yes, I'm still falling for you, every single day, with every single breath.”</p>
+      <p class="easter-sub">Thank you for searching for the little details. You are my absolute favorite puzzle.</p>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
