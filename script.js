@@ -5,16 +5,16 @@
  * timers, and canvas fireworks.
  */
 
-// Custom Date Configuration (Year, Month Index (0-11), Day, Hour, Minute)
-// October 24, 2024
-const MILITARY_START_DATE = new Date(2024, 9, 24, 0, 0, 0);
+// Custom Date Configuration — reads from MEMORIES_CONFIG if available
+const MILITARY_START_DATE = (typeof MEMORIES_CONFIG !== 'undefined' && MEMORIES_CONFIG.startDate)
+  ? new Date(MEMORIES_CONFIG.startDate)
+  : null; // TBD — relationship start date not yet provided
 
 // Global State
 let isMusicPlaying = false;
 let audioContext = null;
 let synthTimer = null;
 let cursor = { x: 0, y: 0, targetX: 0, targetY: 0 };
-let typedBuffer = '';
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading-screen');
@@ -34,14 +34,9 @@ window.addEventListener('DOMContentLoaded', () => {
   initBackgroundParticles();
   initTypewriter();
   initScrollProgress();
+  initMemoryBoard();
   initIntersectionObserver();
-  initPolaroidTilt();
-  initLightbox();
-  initFlippableCards();
-  initFunInteractions();
   initMilestoneCounter();
-  initFinalSurprise();
-  initEasterEgg();
   initCursorGlow();
 });
 
@@ -60,6 +55,7 @@ function initLoadingScreen() {
         window.scrollTo(0, 0);
       }, 500);
     }
+
     loaderProgress.style.width = progress + '%';
   }, 150);
 }
@@ -242,203 +238,675 @@ function initIntersectionObserver() {
   revealElements.forEach(el => observer.observe(el));
 }
 
-/* 7. POLAROID TILT EFFECT */
-function initPolaroidTilt() {
-  const polaroids = document.querySelectorAll('.polaroid-card');
-  
-  polaroids.forEach(card => {
-    card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left; // x coordinate within client bounding box
-      const y = e.clientY - rect.top;  // y coordinate within client bounding box
-      
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      
-      // Calculate rotation strength based on pointer offset from center
-      const rotateX = ((centerY - y) / centerY) * 12; // Max 12deg vertical tilt
-      const rotateY = ((x - centerX) / centerX) * 12; // Max 12deg horizontal tilt
-      
-      card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    });
+/* 7. OUR STORY & EDITORIAL MEMORY TIMELINE ENGINE */
+function initMemoryBoard() {
+  if (typeof MEMORIES === 'undefined' || typeof MEMORIES_CONFIG === 'undefined') return;
 
-    card.addEventListener('mouseleave', () => {
-      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-    });
-  });
-}
+  const basePath = MEMORIES_CONFIG.mediaBasePath || 'memories/';
+  const filtersContainer = document.getElementById('timelineFilters');
+  const storyTimelineItems = document.getElementById('storyTimelineItems');
+  const undatedStoryItems = document.getElementById('undatedStoryItems');
+  const undatedSection = document.getElementById('undatedStorySection');
 
-/* 8. LIGHTBOX MODAL */
-function initLightbox() {
-  const lightbox = document.getElementById('lightbox');
-  const lightboxImg = document.getElementById('lightboxImg');
-  const lightboxCaption = document.getElementById('lightboxCaption');
-  const closeBtn = document.querySelector('.lightbox-close');
-  const polaroids = document.querySelectorAll('.polaroid-card');
+  function initTimelineVideoLifecycle() {
+    const videos = document.querySelectorAll('#timeline video');
+    if (!videos.length || !('IntersectionObserver' in window)) return;
 
-  polaroids.forEach(card => {
-    card.addEventListener('click', () => {
-      const imgSrc = card.getAttribute('data-img-src');
-      const caption = card.getAttribute('data-caption');
-      
-      lightboxImg.src = imgSrc;
-      lightboxCaption.textContent = caption;
-      lightbox.classList.add('active');
-      
-      // Play a subtle click note
-      playClickSound(587.33); // D5 chime
-    });
-  });
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) entry.target.pause();
+      });
+    }, { threshold: 0.1 });
 
-  function closeLightbox() {
-    lightbox.classList.remove('active');
+    videos.forEach(video => videoObserver.observe(video));
   }
 
-  closeBtn.addEventListener('click', closeLightbox);
-  lightbox.addEventListener('click', (e) => {
-    if (e.target === lightbox) {
-      closeLightbox();
-    }
-  });
-  
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeLightbox();
-  });
-}
+  // Lightbox elements
+  const lightboxOverlay = document.getElementById('memoryLightbox');
+  const lightboxBackdrop = document.getElementById('lightboxBackdrop');
+  const lightboxImg = document.getElementById('lightboxMediaImg');
+  const lightboxVideo = document.getElementById('lightboxMediaVideo');
+  const lightboxTitle = document.getElementById('lightboxMemoryTitle');
+  const lightboxCaption = document.getElementById('lightboxCaption');
+  const lightboxCounter = document.getElementById('lightboxCounter');
+  const lightboxCloseBtn = document.getElementById('lightboxClose');
+  const lightboxPrevBtn = document.getElementById('lightboxPrev');
+  const lightboxNextBtn = document.getElementById('lightboxNext');
 
-/* 9. FLIPPABLE CARDS ON TOUCH/CLICK */
-function initFlippableCards() {
-  const flipCards = document.querySelectorAll('.flip-card');
-  
-  flipCards.forEach(card => {
-    card.addEventListener('click', () => {
-      card.classList.toggle('flipped');
-      playClickSound(440); // A4 note on flip
+  function pauseTimelineVideos() {
+    document.querySelectorAll('#timeline video').forEach(video => video.pause());
+  }
+
+  // Lightbox state
+  let currentMemory = null;
+  let currentMediaIndex = 0;
+  let activeFilter = 'All';
+
+  // ---------- HELPER: Build media path ----------
+  function mediaPath(memory, mediaItem) {
+    return basePath + encodeURIComponent(memory.folder) + '/' + encodeURIComponent(mediaItem.filename);
+  }
+
+  // ---------- CATEGORY FILTERS ----------
+  function buildFilters() {
+    if (!filtersContainer) return;
+    filtersContainer.innerHTML = '';
+
+    const categories = new Set();
+    MEMORIES.forEach(m => { if (m.category) categories.add(m.category); });
+
+    // "All" button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'timeline-filter-btn active';
+    allBtn.textContent = 'All Milestones';
+    allBtn.addEventListener('click', () => setFilter('All'));
+    filtersContainer.appendChild(allBtn);
+
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'timeline-filter-btn';
+      btn.textContent = cat;
+      btn.addEventListener('click', () => setFilter(cat));
+      filtersContainer.appendChild(btn);
     });
-  });
-}
+  }
 
-/* 10. PLAYFUL FUN SECTION INTERACTIONS */
-function initFunInteractions() {
-  // Love Meter Calculator
-  const loveBtn = document.getElementById('loveCalcBtn');
-  const meterWrapper = document.getElementById('meterWrapper');
-  const meterFill = document.getElementById('meterFill');
-  const meterValue = document.getElementById('meterValue');
-  const loveResultText = document.getElementById('loveResultText');
-  
-  const loveQuotes = [
-    "More than there are stars in the sky. ✨",
-    "More than pizza on a Friday night! 🍕",
-    "To the moon and back, infinity times! 🚀",
-    "More than a perfect night's sleep. 😴",
-    "More than coffee on a busy Monday morning. ☕",
-    "More than words could ever describe. 💝"
-  ];
+  function setFilter(category) {
+    activeFilter = category;
 
-  loveBtn.addEventListener('click', () => {
-    loveBtn.style.display = 'none';
-    meterWrapper.style.display = 'flex';
-    
-    // Play warm synthesizer sound effect
-    playSweepSynth();
+    // Update active pill button
+    filtersContainer.querySelectorAll('.timeline-filter-btn').forEach(btn => {
+      const isMatch = (category === 'All' && btn.textContent === 'All Milestones') || btn.textContent === category;
+      btn.classList.toggle('active', isMatch);
+    });
 
-    let count = 0;
-    const interval = setInterval(() => {
-      count += 1;
-      meterValue.textContent = count + '%';
-      meterFill.style.width = count + '%';
-      
-      if (count >= 100) {
-        clearInterval(interval);
-        // Exceeded 100% romantic surprise
-        setTimeout(() => {
-          meterValue.textContent = 'INFINITE ❤️';
-          meterValue.classList.add('text-glow');
-          
-          // Random cute quote
-          const randomQuote = loveQuotes[Math.floor(Math.random() * loveQuotes.length)];
-          loveResultText.textContent = randomQuote;
-          
-          // Confetti explosion
-          triggerConfettiBurst();
-        }, 300);
+    // Filter timeline milestones
+    document.querySelectorAll('.story-milestone').forEach(el => {
+      const memCat = el.dataset.category;
+      if (category === 'All' || memCat === category) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
       }
-    }, 25);
+    });
+
+    // Filter undated cards
+    let visibleUndated = 0;
+    document.querySelectorAll('.undated-story-card').forEach(el => {
+      const memCat = el.dataset.category;
+      if (category === 'All' || memCat === category) {
+        el.style.display = '';
+        visibleUndated++;
+      } else {
+        el.style.display = 'none';
+      }
+    });
+
+    if (undatedSection) {
+      undatedSection.style.display = visibleUndated > 0 ? '' : 'none';
+    }
+  }
+
+  // ---------- CREATIVE MEDIA ITEM COMPONENT ----------
+  function createMediaElement(memory, mediaItem, index, count) {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'story-media-item';
+    itemEl.setAttribute('role', 'button');
+    itemEl.setAttribute('tabindex', '0');
+    itemEl.setAttribute('aria-label', `${memory.title} - Item ${index + 1}`);
+
+    const frame = document.createElement('div');
+    frame.className = 'story-media-frame';
+
+    const src = mediaPath(memory, mediaItem);
+
+    if (mediaItem.type === 'video') {
+      const video = document.createElement('video');
+      video.src = src;
+      video.muted = true;
+      video.preload = 'metadata';
+      video.playsInline = true;
+      video.addEventListener('play', () => {
+        document.querySelectorAll('#timeline video').forEach(otherVideo => {
+          if (otherVideo !== video) otherVideo.pause();
+        });
+        if (lightboxVideo) lightboxVideo.pause();
+      });
+      frame.appendChild(video);
+
+      const playPill = document.createElement('div');
+      playPill.className = 'media-play-pill';
+      playPill.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      frame.appendChild(playPill);
+    } else {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = memory.title;
+      img.loading = 'lazy';
+      frame.appendChild(img);
+    }
+
+    itemEl.appendChild(frame);
+
+    // If memory has multiple photos, show a little badge on the primary
+    if (index === 0 && count > 1) {
+      const badge = document.createElement('span');
+      badge.className = 'media-counter-tag';
+      badge.textContent = `${count} photos`;
+      itemEl.appendChild(badge);
+    }
+
+    // Click opens physical photograph lightbox
+    itemEl.addEventListener('click', () => openLightbox(memory, index));
+    itemEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openLightbox(memory, index);
+      }
+    });
+
+    return itemEl;
+  }
+
+  // ---------- ASPECT-RATIO-AWARE EDITORIAL COMPOSITIONS ----------
+  function getMediaProfile(media) {
+    const items = media.map((item, index) => {
+      const ratio = Number(item.ratio) || (item.width && item.height ? item.width / item.height : 1);
+      const sourceArea = Number(item.width) && Number(item.height)
+        ? Number(item.width) * Number(item.height)
+        : 0;
+      let shape = 'square';
+      if (ratio >= 1.8) shape = 'very-wide';
+      else if (ratio >= 1.1) shape = 'landscape';
+      else if (ratio <= 0.6) shape = 'very-tall';
+      else if (ratio < 0.9) shape = 'portrait';
+      const family = ratio < 0.9 ? 'portrait' : ratio > 1.1 ? 'landscape' : 'square';
+      return { item, index, ratio, shape, family, sourceArea };
+    });
+
+    const sourceAreaTotal = items.reduce((total, entry) => total + entry.sourceArea, 0);
+    const familyCounts = items.reduce((counts, entry) => {
+      counts[entry.family] = (counts[entry.family] || 0) + 1;
+      return counts;
+    }, {});
+    const dominantFamily = Object.entries(familyCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'square';
+
+    items.forEach(entry => {
+      entry.relativeArea = sourceAreaTotal
+        ? entry.sourceArea / sourceAreaTotal
+        : 1 / Math.max(items.length, 1);
+    });
+
+    return {
+      items,
+      count: items.length,
+      landscapes: items.filter(entry => entry.shape === 'landscape' || entry.shape === 'very-wide').length,
+      portraits: items.filter(entry => entry.shape === 'portrait' || entry.shape === 'very-tall').length,
+      veryWide: items.filter(entry => entry.shape === 'very-wide').length,
+      veryTall: items.filter(entry => entry.shape === 'very-tall').length,
+      dominantFamily,
+      familyCounts
+    };
+  }
+
+  function chooseMediaPattern(profile) {
+    const { count, landscapes, portraits, veryWide, veryTall } = profile;
+    if (count <= 1) return 'single';
+    if (count >= 8) return 'scattered';
+    if (count === 3) return 'trio';
+
+    const mixedOrientations = landscapes > 0 && portraits > 0;
+    const candidates = [
+      {
+        name: 'pair',
+        score: count === 2 ? 12 : 0
+      },
+      {
+        name: 'pair-mixed',
+        score: count === 2 && mixedOrientations ? 15 : 0
+      },
+      {
+        name: 'landscape-focus',
+        score: mixedOrientations
+          ? (veryWide * 5) + (landscapes * 2) + 2 - (veryTall * 2) +
+            (count >= 4 && count <= 7 ? 3 : 0)
+          : 0
+      },
+      {
+        name: 'portrait-focus',
+        score: mixedOrientations
+          ? (veryTall * 5) + (portraits * 2) + 2 - (veryWide * 2) +
+            (count >= 4 && count <= 7 ? 3 : 0)
+          : 0
+      },
+      {
+        name: 'row-stack',
+        score: (count >= 4 ? 4 : 0) + (landscapes === count ? 5 : 0) +
+          (count >= 6 ? 2 : 0)
+      },
+      {
+        name: 'balanced',
+        score: (mixedOrientations ? 8 : 5) + (count >= 4 && count <= 7 ? 5 : 0) +
+          (count >= 4 && profile.dominantFamily === 'portrait' ? 3 : 0)
+      },
+    ];
+
+    return candidates.reduce((best, candidate) =>
+      candidate.score > best.score ? candidate : best
+    ).name;
+  }
+
+  function appendMediaItems(container, memory, profile, indexes, count) {
+    indexes.forEach(index => {
+      const itemEl = createMediaElement(memory, profile.items[index].item, index, count);
+      itemEl.dataset.mediaShape = profile.items[index].shape;
+      container.appendChild(itemEl);
+    });
+  }
+
+  function getFinalRowIndexes(profile) {
+    if (profile.count < 8) return [];
+    const outliers = profile.items.filter(entry => entry.family !== profile.dominantFamily);
+    return outliers.length > 0 && outliers.length < profile.count ? outliers.map(entry => entry.index) : [];
+  }
+
+  function buildMediaComposition(memory) {
+    const media = memory.media || [];
+    const profile = getMediaProfile(media);
+    const count = profile.count;
+    const pattern = chooseMediaPattern(profile);
+    const container = document.createElement('div');
+    const patternClass = pattern === 'pair-mixed'
+      ? 'layout-pattern-pair layout-pattern-pair-mixed'
+      : `layout-pattern-${pattern}`;
+    container.className = `story-media-composition ${patternClass}`;
+    container.dataset.memoryFolder = memory.folder || '';
+
+    if (pattern === 'single') {
+      appendMediaItems(container, memory, profile, [0], count);
+      return container;
+    }
+
+    if (pattern === 'pair' || pattern === 'pair-mixed') {
+      appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+      return container;
+    }
+
+    if (pattern === 'trio') {
+      appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+      return container;
+    }
+
+    const sortedByRatio = [...profile.items].sort((a, b) => b.ratio - a.ratio);
+    const widestIndex = sortedByRatio[0].index;
+    const tallestIndex = sortedByRatio[sortedByRatio.length - 1].index;
+
+    if (pattern === 'landscape-focus' || pattern === 'portrait-focus') {
+      const focusIndex = pattern === 'landscape-focus' ? widestIndex : tallestIndex;
+      const focus = document.createElement('div');
+      focus.className = 'pattern-focus-media';
+      appendMediaItems(focus, memory, profile, [focusIndex], count);
+      container.appendChild(focus);
+
+      const support = document.createElement('div');
+      support.className = 'pattern-support-media';
+      appendMediaItems(
+        support,
+        memory,
+        profile,
+        profile.items.filter(entry => entry.index !== focusIndex).map(entry => entry.index),
+        count
+      );
+      container.appendChild(support);
+      return container;
+    }
+
+    if (pattern === 'row-stack') {
+      const primaryRow = document.createElement('div');
+      primaryRow.className = 'pattern-primary-row';
+      const primaryCount = Math.min(3, Math.ceil(count / 2));
+      appendMediaItems(primaryRow, memory, profile, profile.items.slice(0, primaryCount).map(entry => entry.index), count);
+      container.appendChild(primaryRow);
+
+      const supportRow = document.createElement('div');
+      const supportCount = count - primaryCount;
+      supportRow.className = `pattern-support-row${supportCount >= 4 ? ' pattern-support-row-wide' : ''}`;
+      appendMediaItems(supportRow, memory, profile, profile.items.slice(primaryCount).map(entry => entry.index), count);
+      container.appendChild(supportRow);
+      return container;
+    }
+
+    if (pattern === 'scattered') {
+      const finalRowIndexes = getFinalRowIndexes(profile);
+      const mainIndexes = profile.items
+        .map(entry => entry.index)
+        .filter(index => !finalRowIndexes.includes(index));
+      const mainGrid = document.createElement('div');
+      mainGrid.className = 'pattern-main-grid';
+      appendMediaItems(mainGrid, memory, profile, mainIndexes, count);
+      container.appendChild(mainGrid);
+
+      if (finalRowIndexes.length > 0) {
+        const finalRow = document.createElement('div');
+        finalRow.className = 'pattern-final-row';
+        appendMediaItems(finalRow, memory, profile, finalRowIndexes, count);
+        container.appendChild(finalRow);
+      }
+      return container;
+    }
+
+    appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+    return container;
+  }
+
+  function updateCompositionAfterVideoMetadata(container, memory) {
+    if (
+      container.dataset.videoProfilePending === 'true' ||
+      container.dataset.videoProfileResolved === 'true'
+    ) return;
+    const videos = [...container.querySelectorAll('video')];
+    if (videos.length === 0) return;
+
+    const update = () => {
+      const videoDimensions = videos.map(video => ({
+        video,
+        width: video.videoWidth,
+        height: video.videoHeight
+      }));
+      if (videoDimensions.some(dimensions => !dimensions.width || !dimensions.height)) return;
+
+      const mediaWithVideoRatios = (memory.media || []).map(item => {
+        const dimensions = videoDimensions.find(entry =>
+          decodeURIComponent(new URL(entry.video.currentSrc).pathname)
+            .endsWith(`/${memory.folder}/${item.filename}`)
+        );
+        if (!dimensions) return item;
+        return {
+          ...item,
+          width: dimensions.width,
+          height: dimensions.height,
+          ratio: dimensions.width / dimensions.height
+        };
+      });
+
+      const replacement = buildMediaComposition({
+        ...memory,
+        media: mediaWithVideoRatios
+      });
+      replacement.dataset.videoProfileResolved = 'true';
+      container.replaceWith(replacement);
+    };
+
+    container.dataset.videoProfilePending = 'true';
+    videos.forEach(video => {
+      if (video.readyState < 1) {
+        video.addEventListener('loadedmetadata', update, { once: true });
+      }
+    });
+    if (videos.every(video => video.readyState >= 1)) update();
+  }
+
+  // ---------- RENDER DATED STORY MILESTONES ----------
+  function renderStoryTimeline() {
+    if (!storyTimelineItems) return;
+    storyTimelineItems.innerHTML = '';
+
+    const datedMemories = MEMORIES
+      .filter(m => m.date !== null)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    datedMemories.forEach((memory, idx) => {
+      const milestone = document.createElement('div');
+      milestone.className = 'story-milestone reveal';
+      milestone.dataset.id = memory.id;
+      milestone.dataset.category = memory.category || '';
+
+      // Center timeline node
+      const node = document.createElement('div');
+      node.className = 'story-node';
+      milestone.appendChild(node);
+
+      // Milestone content block
+      const content = document.createElement('div');
+      content.className = 'story-milestone-content';
+
+      // Header: Date + Title
+      const header = document.createElement('div');
+      header.className = 'story-meta-header';
+
+      if (memory.displayDate) {
+        const dateTag = document.createElement('div');
+        dateTag.className = 'story-date-tag';
+        dateTag.textContent = memory.displayDate;
+        header.appendChild(dateTag);
+      }
+
+      const title = document.createElement('h3');
+      title.className = 'story-milestone-title';
+      title.textContent = memory.title;
+      header.appendChild(title);
+
+      // Locked description
+      if (memory.description) {
+        const desc = document.createElement('p');
+        desc.className = 'story-description-text';
+        desc.textContent = memory.description;
+        header.appendChild(desc);
+      }
+
+      // Locked caption
+      if (memory.caption) {
+        const quote = document.createElement('div');
+        quote.className = 'story-caption-quote';
+        quote.textContent = memory.caption;
+        header.appendChild(quote);
+      }
+
+      content.appendChild(header);
+
+      // Integrated Media Composition
+      const mediaComp = buildMediaComposition(memory);
+      content.appendChild(mediaComp);
+      updateCompositionAfterVideoMetadata(mediaComp, memory);
+
+      milestone.appendChild(content);
+      storyTimelineItems.appendChild(milestone);
+    });
+  }
+
+  // ---------- RENDER UNDATED / EVERYDAY MOMENTS ----------
+  function renderUndatedStory() {
+    if (!undatedStoryItems) return;
+    undatedStoryItems.innerHTML = '';
+
+    const undatedMemories = MEMORIES.filter(m => m.date === null);
+    if (undatedMemories.length === 0) {
+      if (undatedSection) undatedSection.style.display = 'none';
+      return;
+    }
+
+    undatedMemories.forEach(memory => {
+      const card = document.createElement('div');
+      card.className = 'undated-story-card reveal';
+      card.dataset.id = memory.id;
+      card.dataset.category = memory.category || '';
+
+      const header = document.createElement('div');
+      header.className = 'undated-card-header';
+
+      const title = document.createElement('h3');
+      title.className = 'undated-card-title';
+      title.textContent = memory.title;
+      header.appendChild(title);
+
+      if (memory.description) {
+        const desc = document.createElement('p');
+        desc.className = 'undated-card-desc';
+        desc.textContent = memory.description;
+        header.appendChild(desc);
+      }
+
+      if (memory.caption) {
+        const quote = document.createElement('div');
+        quote.className = 'story-caption-quote';
+        quote.textContent = memory.caption;
+        header.appendChild(quote);
+      }
+
+      card.appendChild(header);
+
+      // Media composition
+      const mediaComp = buildMediaComposition(memory);
+      card.appendChild(mediaComp);
+      updateCompositionAfterVideoMetadata(mediaComp, memory);
+
+      undatedStoryItems.appendChild(card);
+    });
+  }
+
+  // ---------- REFINED EDITORIAL LIGHTBOX CONTROLLER ----------
+  function openLightbox(memory, mediaIndex) {
+    pauseTimelineVideos();
+    currentMemory = memory;
+    currentMediaIndex = mediaIndex;
+    showLightboxMedia();
+
+    lightboxOverlay.classList.add('active');
+    lightboxOverlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+
+    // Play subtle bell chime
+    if (typeof playClickSound === 'function') {
+      playClickSound(587.33);
+    }
+  }
+
+  function closeLightbox() {
+    lightboxOverlay.classList.remove('active');
+    lightboxOverlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    if (lightboxVideo) {
+      lightboxVideo.pause();
+      lightboxVideo.removeAttribute('src');
+      lightboxVideo.style.display = 'none';
+    }
+    if (lightboxImg) {
+      lightboxImg.style.display = 'none';
+    }
+  }
+
+  function showLightboxMedia() {
+    if (!currentMemory) return;
+    const mediaItem = currentMemory.media[currentMediaIndex];
+    const src = mediaPath(currentMemory, mediaItem);
+
+    lightboxTitle.textContent = currentMemory.title;
+    lightboxCounter.textContent = `${currentMediaIndex + 1} of ${currentMemory.media.length}`;
+    lightboxCaption.textContent = currentMemory.caption || '';
+
+    if (mediaItem.type === 'video') {
+      lightboxImg.style.display = 'none';
+      lightboxVideo.preload = 'metadata';
+      if (lightboxVideo.src !== new URL(src, document.baseURI).href) {
+        lightboxVideo.pause();
+        lightboxVideo.src = src;
+        lightboxVideo.load();
+      }
+      lightboxVideo.style.display = 'block';
+    } else {
+      if (lightboxVideo) {
+        lightboxVideo.pause();
+        lightboxVideo.style.display = 'none';
+      }
+      lightboxImg.src = src;
+      lightboxImg.alt = `${currentMemory.title} - ${currentMediaIndex + 1}`;
+      lightboxImg.style.display = 'block';
+    }
+
+    // Toggle arrow navigation visibility
+    const hasMultiple = currentMemory.media.length > 1;
+    lightboxPrevBtn.style.display = hasMultiple ? 'flex' : 'none';
+    lightboxNextBtn.style.display = hasMultiple ? 'flex' : 'none';
+
+    lightboxPrevBtn.style.visibility = currentMediaIndex > 0 ? 'visible' : 'hidden';
+    lightboxNextBtn.style.visibility = currentMediaIndex < currentMemory.media.length - 1 ? 'visible' : 'hidden';
+  }
+
+  function lightboxPrev() {
+    if (currentMediaIndex > 0) {
+      currentMediaIndex--;
+      showLightboxMedia();
+    }
+  }
+
+  function lightboxNext() {
+    if (currentMemory && currentMediaIndex < currentMemory.media.length - 1) {
+      currentMediaIndex++;
+      showLightboxMedia();
+    }
+  }
+
+  // Lightbox event listeners
+  if (lightboxCloseBtn) lightboxCloseBtn.addEventListener('click', closeLightbox);
+  if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closeLightbox);
+  if (lightboxPrevBtn) lightboxPrevBtn.addEventListener('click', lightboxPrev);
+  if (lightboxNextBtn) lightboxNextBtn.addEventListener('click', lightboxNext);
+  if (lightboxVideo) {
+    lightboxVideo.addEventListener('play', pauseTimelineVideos);
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (!lightboxOverlay.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lightboxPrev();
+    if (e.key === 'ArrowRight') lightboxNext();
   });
 
-  // Surprise Message Button
-  const surpriseBtn = document.getElementById('surpriseBtn');
-  const surpriseResultText = document.getElementById('surpriseResultText');
-  
-  const surpriseMessages = [
-    "You make my heart skip a beat! 💓",
-    "Have I told you recently how beautiful you are? 😍",
-    "You are my absolute favorite blessing! 🎁",
-    "I'm still falling for you every day! 🍂",
-    "Thank you for being my rock. 💎",
-    "My heart is, and always will be, yours. 🔒"
-  ];
-
-  surpriseBtn.addEventListener('click', () => {
-    const randomMsg = surpriseMessages[Math.floor(Math.random() * surpriseMessages.length)];
-    surpriseResultText.textContent = randomMsg;
-    surpriseResultText.classList.add('text-glow');
-    
-    // Play bells
-    playClickSound(659.25); // E5 note
-    
-    // Burst particles
-    triggerConfettiBurst();
-  });
+  // ---------- INITIALIZATION ----------
+  buildFilters();
+  renderStoryTimeline();
+  renderUndatedStory();
+  initTimelineVideoLifecycle();
 }
 
-/* 11. MILESTONE ANNIVERSARY COUNTER */
+/* 8. LEGACY PLACEHOLDERS (safely no-op) */
+function initLightbox() {}
+function initPolaroidTilt() {}
+
+/* 9. MILESTONE ANNIVERSARY COUNTER */
 function initMilestoneCounter() {
   const daysBox = document.getElementById('daysBox');
   const hoursBox = document.getElementById('hoursBox');
   const minutesBox = document.getElementById('minutesBox');
   const secondsBox = document.getElementById('secondsBox');
+  const counterDateLabel = document.getElementById('counterDateLabel');
 
-  // Try to read the journey start date from the page text (e.g. "Since our journey began on June 9, 2026 11:45 AM")
+  // Use MEMORIES_CONFIG.startDate if available
   let startDate = MILITARY_START_DATE;
-  const counterDateEl = document.querySelector('.counter-date');
-  if (counterDateEl) {
-    const text = counterDateEl.textContent || '';
-    let dateStr = null;
 
-    // Try common formats: "MonthName D, YYYY [HH:MM AM/PM]"
-    let m = text.match(/([A-Za-z]+\s+\d{1,2},\s*\d{4}(?:\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)?)/);
-    if (m) dateStr = m[1];
-
-    // Try "D MonthName YYYY [HH:MM AM/PM]"
-    if (!dateStr) {
-      m = text.match(/(\d{1,2}\s+[A-Za-z]+\s+\d{4}(?:\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)?)/);
-      if (m) dateStr = m[1];
+  if (!startDate) {
+    // Start date is TBD
+    daysBox.textContent = '—';
+    hoursBox.textContent = '—';
+    minutesBox.textContent = '—';
+    secondsBox.textContent = '—';
+    if (counterDateLabel) {
+      counterDateLabel.textContent = 'Start date to be set ❤️';
     }
+    return;
+  }
 
-    // Fallback: everything after 'on' or 'began'
-    if (!dateStr) {
-      m = text.match(/on\s+(.+)$/i) || text.match(/began\s+(.+)$/i);
-      if (m) dateStr = m[1];
-    }
-
-    if (dateStr) {
-      // Clean up common words
-      dateStr = dateStr.replace(/approx\.?/i, '').replace(/at\s+/i, '').trim();
-      const parsed = new Date(dateStr);
-      if (!isNaN(parsed)) {
-        startDate = parsed;
-      } else {
-        const parsedTs = Date.parse(dateStr);
-        if (!isNaN(parsedTs)) startDate = new Date(parsedTs);
-      }
-    }
+  if (counterDateLabel) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    counterDateLabel.textContent = 'Since our journey began on ' + startDate.toLocaleDateString('en-IN', options) + ' ❤️';
   }
 
   function updateCounter() {
     const now = new Date();
-    const diff = Math.max(0, now - startDate); // milliseconds
+    const diff = Math.max(0, now - startDate);
 
     const second = 1000;
     const minute = second * 60;
@@ -460,239 +928,7 @@ function initMilestoneCounter() {
   setInterval(updateCounter, 1000);
 }
 
-/* 12. FINAL SURPRISE & FIREWORKS CANVAS */
-function initFinalSurprise() {
-  const finalSection = document.getElementById('final-surprise');
-  const openHeartBtn = document.getElementById('openHeartBtn');
-  const finalMessageCard = document.getElementById('finalMessageCard');
-  const restartBtn = document.getElementById('restartJourney');
-  
-  // Cinematic line timing reveals
-  let cinematicTriggered = false;
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && !cinematicTriggered) {
-        cinematicTriggered = true;
-        revealCinematicText();
-      }
-    });
-  }, { threshold: 0.4 });
-
-  observer.observe(finalSection);
-
-  function revealCinematicText() {
-    const lines = finalSection.querySelectorAll('.cinema-line');
-    lines.forEach(line => {
-      const delay = parseInt(line.getAttribute('data-delay') || '0');
-      setTimeout(() => {
-        line.classList.add('visible');
-      }, delay);
-    });
-
-    // Show final CTA open heart button after text finishes
-    setTimeout(() => {
-      openHeartBtn.style.display = 'inline-flex';
-      setTimeout(() => {
-        openHeartBtn.style.opacity = '1';
-        openHeartBtn.classList.add('pulse');
-      }, 50);
-    }, 9500);
-  }
-
-  // Open Heart action
-  openHeartBtn.addEventListener('click', () => {
-    // Play fireworks sounds + increase volume
-    if (isMusicPlaying) {
-      bgMusic.volume = 1.0;
-    } else {
-      initAudioContext();
-      startMusicEngine();
-    }
-
-    // Play high pitch harp chord
-    playHarpSynth();
-
-    // Hide cinematic elements
-    document.getElementById('cinematicText').style.display = 'none';
-    openHeartBtn.style.display = 'none';
-
-    // Show final greeting card
-    finalMessageCard.style.display = 'block';
-    setTimeout(() => {
-      finalMessageCard.classList.add('active');
-    }, 100);
-
-    // Run active fireworks canvas loops
-    startFireworksEngine();
-  });
-
-  // Restart Button
-  restartBtn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      // Reload page to reset all meters & play animations again
-      window.location.reload();
-    }, 800);
-  });
-}
-
-// Confetti burst helper for fun actions
-function triggerConfettiBurst() {
-  const canvas = document.getElementById('particleCanvas');
-  const ctx = canvas.getContext('2d');
-  
-  // Spawns instant falling colorful circles from top-middle
-  for (let i = 0; i < 40; i++) {
-    setTimeout(() => {
-      const conf = {
-        x: Math.random() * canvas.width,
-        y: -10,
-        r: Math.random() * 6 + 4,
-        color: ['#ff7597', '#e5c158', '#b76e79', '#ff8fa3', '#fff'][Math.floor(Math.random() * 5)],
-        speedY: Math.random() * 4 + 2,
-        speedX: Math.random() * 4 - 2,
-        decay: 0.98
-      };
-      
-      function drawConfettiPiece() {
-        if (conf.y > canvas.height) return;
-        ctx.fillStyle = conf.color;
-        ctx.beginPath();
-        ctx.arc(conf.x, conf.y, conf.r, 0, Math.PI * 2);
-        ctx.fill();
-        conf.y += conf.speedY;
-        conf.x += conf.speedX;
-        conf.speedX *= conf.decay;
-        requestAnimationFrame(drawConfettiPiece);
-      }
-      drawConfettiPiece();
-    }, i * 20);
-  }
-}
-
-// Fullscreen Fireworks Logic
-let fireworksActive = false;
-function startFireworksEngine() {
-  fireworksActive = true;
-  const canvas = document.getElementById('fireworksCanvas');
-  const ctx = canvas.getContext('2d');
-  
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  let fireworks = [];
-  let particles = [];
-
-  class Firework {
-    constructor() {
-      this.x = Math.random() * canvas.width;
-      this.y = canvas.height;
-      this.tx = this.x + (Math.random() * 200 - 100);
-      this.ty = Math.random() * (canvas.height * 0.5);
-      this.speed = Math.random() * 3 + 4;
-      this.angle = Math.atan2(this.ty - this.y, this.tx - this.x);
-      this.opacity = 1;
-    }
-
-    update() {
-      this.x += Math.cos(this.angle) * this.speed;
-      this.y += Math.sin(this.angle) * this.speed;
-      
-      const distance = Math.hypot(this.tx - this.x, this.ty - this.y);
-      if (distance < 10) {
-        explode(this.tx, this.ty);
-        return false;
-      }
-      return true;
-    }
-
-    draw() {
-      ctx.save();
-      ctx.strokeStyle = '#ff7597';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.lineTo(this.x - Math.cos(this.angle) * 10, this.y - Math.sin(this.angle) * 10);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  class Particle {
-    constructor(x, y, color) {
-      this.x = x;
-      this.y = y;
-      this.color = color;
-      this.angle = Math.random() * Math.PI * 2;
-      this.speed = Math.random() * 4 + 1;
-      this.gravity = 0.08;
-      this.opacity = 1;
-      this.fade = Math.random() * 0.015 + 0.008;
-    }
-
-    update() {
-      this.x += Math.cos(this.angle) * this.speed;
-      this.y += Math.sin(this.angle) * this.speed + this.gravity;
-      this.speed *= 0.98;
-      this.opacity -= this.fade;
-      return this.opacity > 0;
-    }
-
-    draw() {
-      ctx.save();
-      ctx.globalAlpha = this.opacity;
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = this.color;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  function explode(x, y) {
-    const colors = ['#ff7597', '#e5c158', '#ff8fa3', '#b76e79', '#ffffff', '#e0a96d'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    // Play synthetic boom sound
-    playBoomSound();
-    for (let i = 0; i < 40; i++) {
-      particles.push(new Particle(x, y, color));
-    }
-  }
-
-  function animate() {
-    if (!fireworksActive) return;
-    ctx.fillStyle = 'rgba(3, 2, 6, 0.2)'; // trail effect
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (Math.random() < 0.04 && fireworks.length < 5) {
-      fireworks.push(new Firework());
-    }
-
-    fireworks = fireworks.filter(f => {
-      const keep = f.update();
-      if (keep) f.draw();
-      return keep;
-    });
-
-    particles = particles.filter(p => {
-      const keep = p.update();
-      if (keep) p.draw();
-      return keep;
-    });
-
-    requestAnimationFrame(animate);
-  }
-  animate();
-}
-
-/* 13. AUDIO ENGINE & WEB AUDIO API FALLBACK */
+/* 10. AUDIO ENGINE & WEB AUDIO API FALLBACK */
 // Music toggle trigger
 musicToggle.addEventListener('click', () => {
   initAudioContext();
@@ -812,108 +1048,4 @@ function playClickSound(freq = 440) {
   
   osc.start();
   osc.stop(audioContext.currentTime + 0.9);
-}
-
-// SFX: Heart Sweep for meters
-function playSweepSynth() {
-  if (!audioContext) return;
-  initAudioContext();
-  
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(261.63, audioContext.currentTime); // Start C4
-  osc.frequency.exponentialRampToValueAtTime(523.25, audioContext.currentTime + 2.0); // Sweep up to C5
-  
-  gain.gain.setValueAtTime(0.08, audioContext.currentTime);
-  gain.gain.linearRampToValueAtTime(0.08, audioContext.currentTime + 1.8);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2.2);
-  
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-  
-  osc.start();
-  osc.stop(audioContext.currentTime + 2.3);
-}
-
-// SFX: Harp Sweep for opening heart
-function playHarpSynth() {
-  if (!audioContext) return;
-  initAudioContext();
-  
-  const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25];
-  const now = audioContext.currentTime;
-
-  notes.forEach((freq, idx) => {
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now + idx * 0.05); // Rapid notes
-    
-    gain.gain.setValueAtTime(0.08, now + idx * 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 1.2);
-    
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    
-    osc.start(now + idx * 0.05);
-    osc.stop(now + idx * 0.05 + 1.3);
-  });
-}
-
-// SFX: Deep fireworks boom sound effect
-function playBoomSound() {
-  if (!audioContext) return;
-  
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  
-  osc.type = 'sine';
-  // Rapid frequency fall mimicking a thunderous boom
-  osc.frequency.setValueAtTime(120, audioContext.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(30, audioContext.currentTime + 0.4);
-  
-  gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
-  
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-  
-  osc.start();
-  osc.stop(audioContext.currentTime + 0.9);
-}
-
-/* 14. EASTER EGG (L-O-V-E) */
-function initEasterEgg() {
-  const modal = document.getElementById('easterEggModal');
-  const closeBtn = document.getElementById('easterCloseBtn');
-  
-  document.addEventListener('keydown', (e) => {
-    // Record keys typed
-    typedBuffer += e.key.toLowerCase();
-    
-    // Cap length to avoid infinite memory growth
-    if (typedBuffer.length > 20) {
-      typedBuffer = typedBuffer.substring(typedBuffer.length - 10);
-    }
-    
-    // Check key patterns
-    if (typedBuffer.endsWith('love')) {
-      typedBuffer = ''; // Clear
-      modal.classList.add('active');
-      playHarpSynth();
-    }
-  });
-
-  closeBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('active');
-    }
-  });
 }
