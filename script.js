@@ -254,7 +254,13 @@ function initMemoryBoard() {
 
     const videoObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (!entry.isIntersecting) entry.target.pause();
+        if (entry.isIntersecting) {
+          entry.target.play().catch(error => {
+            console.warn('Timeline video preview could not autoplay:', error);
+          });
+        } else {
+          entry.target.pause();
+        }
       });
     }, { threshold: 0.1 });
 
@@ -364,6 +370,8 @@ function initMemoryBoard() {
       const video = document.createElement('video');
       video.src = src;
       video.muted = true;
+      video.autoplay = true;
+      video.loop = true;
       video.preload = 'metadata';
       video.playsInline = true;
       video.addEventListener('play', () => {
