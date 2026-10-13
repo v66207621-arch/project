@@ -578,6 +578,62 @@ const MEMORIES = [
         "filename": "WhatsApp Video 2026-10-05 at 19.16.29.mp4",
         "type": "video",
         "orientation": "video"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.11.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.12.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.13.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.132.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.14.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.15.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.16.jpeg",
+        "type": "image",
+        "width": 738,
+        "height": 1600,
+        "ratio": 0.46,
+        "orientation": "portrait"
       }
     ]
   },
@@ -601,9 +657,237 @@ const MEMORIES = [
         "orientation": "portrait"
       },
       {
+        "filename": "WhatsApp Image 2026-10-14 at 00.09.21.jpeg",
+        "type": "image",
+        "width": 1200,
+        "height": 1600,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
         "filename": "WhatsApp Video 2026-10-04 at 18.58.34.mp4",
         "type": "video",
+        "width": 480,
+        "height": 848,
+        "ratio": 0.57,
         "orientation": "video"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "title": "Our Kind of Perfect Date 🎨❤️",
+    "date": "2026-10-05",
+    "displayDate": "5 October 2026",
+    "category": "Date",
+    "type": "mixed",
+    "description": "A date filled with little drawings, handmade surprises, and the kind of happiness that comes from simply being together. ❤️\n\nWe made cute and slightly ridiculous drawings for each other, exchanged gifts, and turned our desk into a little corner full of things that remind us of one another. The teddy bear glass, the tiny notes, the decorations — every little thing had a story of its own. 🧸🤍\n\nAnd somewhere between all the drawing, decorating, laughing, and enjoying each other's company, we captured a cute little timelapse of our time together.\n\nNothing extravagant, nothing complicated — just two people making an ordinary space feel a little more like ours. ❤️",
+    "caption": "Little Gifts, Big Feelings 🤍",
+    "folder": "date and gifts",
+    "media": [
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.09.02.jpeg",
+        "type": "image",
+        "width": 575,
+        "height": 1280,
+        "ratio": 0.45,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.09.03.jpeg",
+        "type": "image",
+        "width": 1280,
+        "height": 575,
+        "ratio": 2.23,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.08.09.jpeg",
+        "type": "image",
+        "width": 1600,
+        "height": 900,
+        "ratio": 1.78,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "WhatsApp Video 2026-10-04 at 18.55.11.mp4",
+        "type": "video",
+        "width": 848,
+        "height": 478,
+        "ratio": 1.77,
+        "orientation": "video"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "title": "We Celebrated, We Played, We Made Memories 🎮❤️",
+    "date": "2026-10-11",
+    "displayDate": "11 October 2026",
+    "category": "Society",
+    "type": "mixed",
+    "description": "After all the planning, preparation, and hard work that went into Intel-X, it was finally time to celebrate. ❤️\n\nThe success party brought a different kind of fun — playing games, trying our luck at the pool table, taking candid pictures, and enjoying each other's company without the pressure of running an event.\n\nBetween the gaming sessions, silly moments, and little smiles captured along the way, the day became more than just a celebration of a successful event. It became another memory of us, having fun together and enjoying a moment we had earned. 🎮🤍\n\nFrom making Intel-X happen to celebrating its success side by side — another chapter worth keeping forever. ❤️",
+    "caption": "The Celebration After the Chaos 🥂❤️",
+    "folder": "event after party",
+    "media": [
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.16.jpeg",
+        "type": "image",
+        "width": 1296,
+        "height": 972,
+        "ratio": 1.33,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.161.jpeg",
+        "type": "image",
+        "width": 1296,
+        "height": 972,
+        "ratio": 1.33,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.28.jpeg",
+        "type": "image",
+        "width": 1296,
+        "height": 972,
+        "ratio": 1.33,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.30.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.301.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.31.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.312.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.32.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.322.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.02.33.jpeg",
+        "type": "image",
+        "width": 960,
+        "height": 1280,
+        "ratio": 0.75,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Video 2026-10-14 at 00.02.17.mp4",
+        "type": "video",
+        "width": 478,
+        "height": 850,
+        "ratio": 0.56,
+        "orientation": "video"
+      },
+      {
+        "filename": "WhatsApp Video 2026-10-14 at 00.13.54.mp4",
+        "type": "video",
+        "width": 478,
+        "height": 850,
+        "ratio": 0.56,
+        "orientation": "video"
+      },
+      {
+        "filename": "WhatsApp Video 2026-10-14 at 00.14.05.mp4",
+        "type": "video",
+        "width": 848,
+        "height": 478,
+        "ratio": 1.77,
+        "orientation": "video"
+      },
+      {
+        "filename": "WhatsApp Video 2026-10-14 at 00.28.30.mp4",
+        "type": "video",
+        "width": 848,
+        "height": 478,
+        "ratio": 1.77,
+        "orientation": "video"
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "title": "The Gift I'll Treasure Forever ❤️",
+    "date": null,
+    "displayDate": null,
+    "category": "Special Moments",
+    "type": "photos",
+    "description": "Some gifts are beautiful because of what they are. Others become priceless because of the person who gives them. ❤️\n\nThis was the first gift from you — something handmade, filled with your drawings, your words, your little hearts, and pieces of your love in every detail. Every page holds a little reminder of how deeply you care, and every handwritten line is something to come back to whenever words don't feel enough.\n\nIt's more than paper and drawings. It's the feeling of being loved, understood, and cherished by someone who means the world. Something so personal that no expensive gift could ever replace it.\n\nOur most precious keepsake, and a little reminder of the love we'll always treasure. 🤍",
+    "caption": "A Gift Full of Heart 🫶🏻",
+    "folder": "most precious gift",
+    "featured": true,
+    "media": [
+      {
+        "filename": "1.jpeg",
+        "type": "image",
+        "width": 902,
+        "height": 1356,
+        "ratio": 0.67,
+        "orientation": "portrait",
+        "role": "letter"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.52.40.jpeg",
+        "type": "image",
+        "width": 993,
+        "height": 1540,
+        "ratio": 0.64,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.52.401.jpeg",
+        "type": "image",
+        "width": 947,
+        "height": 1474,
+        "ratio": 0.64,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-14 at 00.52.402.jpeg",
+        "type": "image",
+        "width": 951,
+        "height": 1525,
+        "ratio": 0.62,
+        "orientation": "portrait"
       }
     ]
   }

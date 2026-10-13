@@ -247,6 +247,8 @@ function initMemoryBoard() {
   const storyTimelineItems = document.getElementById('storyTimelineItems');
   const undatedStoryItems = document.getElementById('undatedStoryItems');
   const undatedSection = document.getElementById('undatedStorySection');
+  const featuredMemorySection = document.getElementById('featuredMemorySection');
+  const featuredMemoryCard = document.getElementById('featuredMemory');
 
   function initTimelineVideoLifecycle() {
     const videos = document.querySelectorAll('#timeline video');
@@ -287,6 +289,7 @@ function initMemoryBoard() {
   let currentMemory = null;
   let currentMediaIndex = 0;
   let activeFilter = 'All';
+  let lightboxKeydownHandler = null;
 
   // ---------- HELPER: Build media path ----------
   function mediaPath(memory, mediaItem) {
@@ -336,6 +339,11 @@ function initMemoryBoard() {
       }
     });
 
+    if (featuredMemorySection && featuredMemoryCard) {
+      const categoryMatches = category === 'All' || featuredMemoryCard.dataset.category === category;
+      featuredMemorySection.hidden = !categoryMatches;
+    }
+
     // Filter undated cards
     let visibleUndated = 0;
     document.querySelectorAll('.undated-story-card').forEach(el => {
@@ -357,6 +365,7 @@ function initMemoryBoard() {
   function createMediaElement(memory, mediaItem, index, count) {
     const itemEl = document.createElement('div');
     itemEl.className = 'story-media-item';
+    itemEl.dataset.mediaIndex = index;
     itemEl.setAttribute('role', 'button');
     itemEl.setAttribute('tabindex', '0');
     itemEl.setAttribute('aria-label', `${memory.title} - Item ${index + 1}`);
@@ -369,6 +378,10 @@ function initMemoryBoard() {
     if (mediaItem.type === 'video') {
       const video = document.createElement('video');
       video.src = src;
+      if (mediaItem.width && mediaItem.height) {
+        video.width = mediaItem.width;
+        video.height = mediaItem.height;
+      }
       video.muted = true;
       video.autoplay = true;
       video.loop = true;
@@ -389,6 +402,10 @@ function initMemoryBoard() {
     } else {
       const img = document.createElement('img');
       img.src = src;
+      if (mediaItem.width && mediaItem.height) {
+        img.width = mediaItem.width;
+        img.height = mediaItem.height;
+      }
       img.alt = memory.title;
       img.loading = 'lazy';
       frame.appendChild(img);
@@ -397,10 +414,15 @@ function initMemoryBoard() {
     itemEl.appendChild(frame);
 
     // If memory has multiple photos, show a little badge on the primary
-    if (index === 0 && count > 1) {
+    if (index === 0 && count > 1 && !memory.featured) {
+      itemEl.classList.add('has-media-counter');
       const badge = document.createElement('span');
       badge.className = 'media-counter-tag';
-      badge.textContent = `${count} photos`;
+      const photoCount = memory.media.filter(item => item.type !== 'video').length;
+      const videoCount = memory.media.length - photoCount;
+      badge.textContent = videoCount
+        ? `${photoCount} photos · ${videoCount} videos`
+        : `${count} photos`;
       itemEl.appendChild(badge);
     }
 
@@ -419,7 +441,9 @@ function initMemoryBoard() {
   // ---------- ASPECT-RATIO-AWARE EDITORIAL COMPOSITIONS ----------
   function getMediaProfile(media) {
     const items = media.map((item, index) => {
-      const ratio = Number(item.ratio) || (item.width && item.height ? item.width / item.height : 1);
+      const ratio = item.width && item.height
+        ? item.width / item.height
+        : Number(item.ratio) || 1;
       const sourceArea = Number(item.width) && Number(item.height)
         ? Number(item.width) * Number(item.height)
         : 0;
@@ -559,11 +583,35 @@ function initMemoryBoard() {
 
       const support = document.createElement('div');
       support.className = 'pattern-support-media';
+      const supportItems = profile.items.filter(entry => entry.index !== focusIndex);
+      const portraitItems = supportItems.filter(entry =>
+        entry.shape === 'portrait' || entry.shape === 'very-tall'
+      );
+      const supportingItems = supportItems.filter(entry =>
+        entry.shape !== 'portrait' && entry.shape !== 'very-tall'
+      );
+      if (portraitItems.length === 1 && supportingItems.length >= 2) {
+        const portraitRatio = portraitItems[0].ratio;
+        const supportingHeightRatio = supportingItems.reduce(
+          (total, entry) => total + 1 / entry.ratio,
+          0
+        );
+        const portraitShare = Math.min(
+          0.55,
+          Math.max(0.28, (portraitRatio * supportingHeightRatio) / (1 + portraitRatio * supportingHeightRatio))
+        );
+        support.classList.add('pattern-support-portrait-stack');
+        container.classList.add('layout-pattern-balanced-focus');
+        support.style.setProperty(
+          '--portrait-column-share',
+          `${portraitShare / (1 - portraitShare)}fr`
+        );
+      }
       appendMediaItems(
         support,
         memory,
         profile,
-        profile.items.filter(entry => entry.index !== focusIndex).map(entry => entry.index),
+        supportItems.map(entry => entry.index),
         count
       );
       container.appendChild(support);
@@ -608,51 +656,76 @@ function initMemoryBoard() {
     return container;
   }
 
-  function updateCompositionAfterVideoMetadata(container, memory) {
+  function updateCompositionAfterMediaMetadata(container, memory) {
     if (
-      container.dataset.videoProfilePending === 'true' ||
-      container.dataset.videoProfileResolved === 'true'
+      container.dataset.mediaProfilePending === 'true' ||
+      container.dataset.mediaProfileResolved === 'true'
     ) return;
-    const videos = [...container.querySelectorAll('video')];
-    if (videos.length === 0) return;
+    const mediaElements = [...container.querySelectorAll('.story-media-item img, .story-media-item video')];
+    if (mediaElements.length === 0) return;
 
     const update = () => {
-      const videoDimensions = videos.map(video => ({
-        video,
-        width: video.videoWidth,
-        height: video.videoHeight
-      }));
-      if (videoDimensions.some(dimensions => !dimensions.width || !dimensions.height)) return;
+      if (container.dataset.mediaProfileReplaced === 'true') return;
 
-      const mediaWithVideoRatios = (memory.media || []).map(item => {
-        const dimensions = videoDimensions.find(entry =>
-          decodeURIComponent(new URL(entry.video.currentSrc).pathname)
-            .endsWith(`/${memory.folder}/${item.filename}`)
-        );
-        if (!dimensions) return item;
-        return {
-          ...item,
-          width: dimensions.width,
-          height: dimensions.height,
-          ratio: dimensions.width / dimensions.height
-        };
-      });
+      const allMediaResolved = mediaElements.every(mediaElement =>
+        mediaElement.tagName === 'IMG'
+          ? mediaElement.complete || mediaElement.dataset.mediaLoadFailed === 'true'
+          : mediaElement.readyState >= 1 || mediaElement.error ||
+            mediaElement.dataset.mediaLoadFailed === 'true'
+      );
+      if (!allMediaResolved) return;
 
-      const replacement = buildMediaComposition({
-        ...memory,
-        media: mediaWithVideoRatios
+      const mediaWithIntrinsicDimensions = (memory.media || []).map((item, index) => {
+        const itemEl = container.querySelector(`.story-media-item[data-media-index="${index}"]`);
+        const mediaElement = itemEl?.querySelector('img, video');
+        const width = mediaElement?.tagName === 'IMG'
+          ? mediaElement.naturalWidth
+          : mediaElement?.videoWidth;
+        const height = mediaElement?.tagName === 'IMG'
+          ? mediaElement.naturalHeight
+          : mediaElement?.videoHeight;
+        if (!width || !height) return item;
+
+        const ratio = width / height;
+        if (item.width === width && item.height === height) return item;
+        return { ...item, width, height, ratio };
       });
-      replacement.dataset.videoProfileResolved = 'true';
-      container.replaceWith(replacement);
+      const dimensionsChanged = mediaWithIntrinsicDimensions.some((item, index) =>
+        item !== memory.media[index]
+      );
+
+      if (dimensionsChanged) {
+        const updatedMemory = { ...memory, media: mediaWithIntrinsicDimensions };
+        const replacement = buildMediaComposition(updatedMemory);
+        container.dataset.mediaProfileReplaced = 'true';
+        replacement.dataset.mediaProfileResolved = 'true';
+        container.replaceWith(replacement);
+        return;
+      }
+
+      container.dataset.mediaProfileResolved = 'true';
+      container.dataset.mediaProfilePending = 'false';
     };
 
-    container.dataset.videoProfilePending = 'true';
-    videos.forEach(video => {
-      if (video.readyState < 1) {
-        video.addEventListener('loadedmetadata', update, { once: true });
+    container.dataset.mediaProfilePending = 'true';
+    mediaElements.forEach(mediaElement => {
+      if (mediaElement.tagName === 'IMG') {
+        if (!mediaElement.complete) {
+          mediaElement.addEventListener('load', update, { once: true });
+          mediaElement.addEventListener('error', () => {
+            mediaElement.dataset.mediaLoadFailed = 'true';
+            update();
+          }, { once: true });
+        }
+      } else if (mediaElement.readyState < 1) {
+        mediaElement.addEventListener('loadedmetadata', update, { once: true });
+        mediaElement.addEventListener('error', () => {
+          mediaElement.dataset.mediaLoadFailed = 'true';
+          update();
+        }, { once: true });
       }
     });
-    if (videos.every(video => video.readyState >= 1)) update();
+    update();
   }
 
   // ---------- RENDER DATED STORY MILESTONES ----------
@@ -716,11 +789,77 @@ function initMemoryBoard() {
       // Integrated Media Composition
       const mediaComp = buildMediaComposition(memory);
       content.appendChild(mediaComp);
-      updateCompositionAfterVideoMetadata(mediaComp, memory);
+      updateCompositionAfterMediaMetadata(mediaComp, memory);
 
       milestone.appendChild(content);
       storyTimelineItems.appendChild(milestone);
     });
+  }
+
+  function renderFeaturedMemory() {
+    if (!featuredMemorySection || !featuredMemoryCard) return;
+
+    const memory = MEMORIES.find(item => item.featured);
+    if (!memory) {
+      featuredMemorySection.hidden = true;
+      return;
+    }
+
+    const letterIndex = memory.media.findIndex(item => item.role === 'letter');
+    if (letterIndex < 0) {
+      throw new Error(`Featured memory "${memory.title}" is missing its letter photograph.`);
+    }
+
+    featuredMemorySection.hidden = false;
+    featuredMemoryCard.dataset.id = memory.id;
+    featuredMemoryCard.dataset.category = memory.category || '';
+
+    const heading = document.createElement('header');
+    heading.className = 'featured-memory-heading';
+
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'featured-memory-eyebrow';
+    eyebrow.textContent = 'Our most precious keepsake';
+
+    const title = document.createElement('h2');
+    title.className = 'featured-memory-title';
+    title.id = 'featuredMemoryTitle';
+    title.textContent = memory.title;
+
+    const caption = document.createElement('p');
+    caption.className = 'featured-memory-caption';
+    caption.textContent = memory.caption || '';
+
+    heading.append(eyebrow, title, caption);
+    featuredMemoryCard.replaceChildren(heading);
+
+    const description = document.createElement('div');
+    description.className = 'featured-memory-description';
+    (memory.description || '').split(/\n\s*\n/).forEach(paragraphText => {
+      if (!paragraphText) return;
+      const paragraph = document.createElement('p');
+      paragraph.textContent = paragraphText;
+      description.appendChild(paragraph);
+    });
+    featuredMemoryCard.appendChild(description);
+
+    const gallery = document.createElement('div');
+    gallery.className = 'featured-memory-gallery';
+
+    const letter = createMediaElement(memory, memory.media[letterIndex], letterIndex, memory.media.length);
+    letter.classList.add('featured-memory-letter');
+    gallery.appendChild(letter);
+
+    const supportingMedia = document.createElement('div');
+    supportingMedia.className = 'featured-memory-support';
+    memory.media.forEach((mediaItem, index) => {
+      if (index === letterIndex) return;
+      const mediaElement = createMediaElement(memory, mediaItem, index, memory.media.length);
+      mediaElement.classList.add('featured-memory-support-item');
+      supportingMedia.appendChild(mediaElement);
+    });
+    featuredMemoryCard.appendChild(gallery);
+    gallery.appendChild(supportingMedia);
   }
 
   // ---------- RENDER UNDATED / EVERYDAY MOMENTS ----------
@@ -728,7 +867,7 @@ function initMemoryBoard() {
     if (!undatedStoryItems) return;
     undatedStoryItems.innerHTML = '';
 
-    const undatedMemories = MEMORIES.filter(m => m.date === null);
+    const undatedMemories = MEMORIES.filter(m => m.date === null && !m.featured);
     if (undatedMemories.length === 0) {
       if (undatedSection) undatedSection.style.display = 'none';
       return;
@@ -767,7 +906,7 @@ function initMemoryBoard() {
       // Media composition
       const mediaComp = buildMediaComposition(memory);
       card.appendChild(mediaComp);
-      updateCompositionAfterVideoMetadata(mediaComp, memory);
+      updateCompositionAfterMediaMetadata(mediaComp, memory);
 
       undatedStoryItems.appendChild(card);
     });
@@ -778,11 +917,37 @@ function initMemoryBoard() {
     pauseTimelineVideos();
     currentMemory = memory;
     currentMediaIndex = mediaIndex;
+    lightboxOverlay.classList.toggle('featured-memory-lightbox', Boolean(memory.featured));
     showLightboxMedia();
 
     lightboxOverlay.classList.add('active');
     lightboxOverlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (!lightboxKeydownHandler) {
+      lightboxKeydownHandler = event => {
+        if (!lightboxOverlay.classList.contains('active')) return;
+
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeLightbox();
+          return;
+        }
+
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+        const target = event.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.isContentEditable || target.closest('input, textarea, select, [contenteditable="true"]'))
+        ) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.key === 'ArrowLeft') lightboxPrev();
+        else lightboxNext();
+      };
+    }
+    document.addEventListener('keydown', lightboxKeydownHandler);
 
     // Play subtle bell chime
     if (typeof playClickSound === 'function') {
@@ -792,8 +957,12 @@ function initMemoryBoard() {
 
   function closeLightbox() {
     lightboxOverlay.classList.remove('active');
+    lightboxOverlay.classList.remove('featured-memory-lightbox');
     lightboxOverlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (lightboxKeydownHandler) {
+      document.removeEventListener('keydown', lightboxKeydownHandler);
+    }
 
     if (lightboxVideo) {
       lightboxVideo.pause();
@@ -838,20 +1007,20 @@ function initMemoryBoard() {
     lightboxPrevBtn.style.display = hasMultiple ? 'flex' : 'none';
     lightboxNextBtn.style.display = hasMultiple ? 'flex' : 'none';
 
-    lightboxPrevBtn.style.visibility = currentMediaIndex > 0 ? 'visible' : 'hidden';
-    lightboxNextBtn.style.visibility = currentMediaIndex < currentMemory.media.length - 1 ? 'visible' : 'hidden';
+    lightboxPrevBtn.style.visibility = hasMultiple ? 'visible' : 'hidden';
+    lightboxNextBtn.style.visibility = hasMultiple ? 'visible' : 'hidden';
   }
 
   function lightboxPrev() {
-    if (currentMediaIndex > 0) {
-      currentMediaIndex--;
+    if (currentMemory?.media.length > 1) {
+      currentMediaIndex = (currentMediaIndex - 1 + currentMemory.media.length) % currentMemory.media.length;
       showLightboxMedia();
     }
   }
 
   function lightboxNext() {
-    if (currentMemory && currentMediaIndex < currentMemory.media.length - 1) {
-      currentMediaIndex++;
+    if (currentMemory?.media.length > 1) {
+      currentMediaIndex = (currentMediaIndex + 1) % currentMemory.media.length;
       showLightboxMedia();
     }
   }
@@ -865,16 +1034,9 @@ function initMemoryBoard() {
     lightboxVideo.addEventListener('play', pauseTimelineVideos);
   }
 
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (!lightboxOverlay.classList.contains('active')) return;
-    if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowLeft') lightboxPrev();
-    if (e.key === 'ArrowRight') lightboxNext();
-  });
-
   // ---------- INITIALIZATION ----------
   buildFilters();
+  renderFeaturedMemory();
   renderStoryTimeline();
   renderUndatedStory();
   initTimelineVideoLifecycle();
