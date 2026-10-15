@@ -5,6 +5,46 @@ const MEMORIES_CONFIG = {
 
 const MEMORIES = [
   {
+    "id": 16,
+    "title": "Before We Became Us 🤍",
+    "date": null,
+    "displayDate": null,
+    "category": "Everyday",
+    "type": "photos",
+    "description": "Before there was an official “us”, there were already little moments worth keeping. ❤️ These pictures belong to the time before our relationship began — a small glimpse of the memories that came before everything changed. Looking back, it's lovely to have these moments preserved too. 🤍",
+    "caption": "Little Moments Before Forever 🤍",
+    "pinned": true,
+    "media": [
+      {
+        "filename": "1.jpeg",
+        "src": "1.jpeg",
+        "type": "image",
+        "width": 1086,
+        "height": 1114,
+        "ratio": 0.975,
+        "orientation": "square"
+      },
+      {
+        "filename": "2.jpeg",
+        "src": "2.jpeg",
+        "type": "image",
+        "width": 1031,
+        "height": 712,
+        "ratio": 1.448,
+        "orientation": "landscape"
+      },
+      {
+        "filename": "3.jpeg",
+        "src": "3.jpeg",
+        "type": "image",
+        "width": 1048,
+        "height": 729,
+        "ratio": 1.437,
+        "orientation": "landscape"
+      }
+    ]
+  },
+  {
     "id": 1,
     "title": "The Day We Finally Met ❤️",
     "date": "2026-07-26",
@@ -684,6 +724,7 @@ const MEMORIES = [
     "description": "A date filled with little drawings, handmade surprises, and the kind of happiness that comes from simply being together. ❤️\n\nWe made cute and slightly ridiculous drawings for each other, exchanged gifts, and turned our desk into a little corner full of things that remind us of one another. The teddy bear glass, the tiny notes, the decorations — every little thing had a story of its own. 🧸🤍\n\nAnd somewhere between all the drawing, decorating, laughing, and enjoying each other's company, we captured a cute little timelapse of our time together.\n\nNothing extravagant, nothing complicated — just two people making an ordinary space feel a little more like ours. ❤️",
     "caption": "Little Gifts, Big Feelings 🤍",
     "folder": "date and gifts",
+    "layoutPattern": "landscape-focus",
     "media": [
       {
         "filename": "WhatsApp Image 2026-10-14 at 00.09.02.jpeg",
@@ -716,6 +757,22 @@ const MEMORIES = [
         "height": 478,
         "ratio": 1.77,
         "orientation": "video"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-15 at 17.40.50.jpeg",
+        "type": "image",
+        "width": 575,
+        "height": 1280,
+        "ratio": 0.45,
+        "orientation": "portrait"
+      },
+      {
+        "filename": "WhatsApp Image 2026-10-15 at 17.40.501.jpeg",
+        "type": "image",
+        "width": 575,
+        "height": 1280,
+        "ratio": 0.45,
+        "orientation": "portrait"
       }
     ]
   },

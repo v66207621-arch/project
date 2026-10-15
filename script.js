@@ -245,6 +245,8 @@ function initMemoryBoard() {
   const basePath = MEMORIES_CONFIG.mediaBasePath || 'memories/';
   const filtersContainer = document.getElementById('timelineFilters');
   const storyTimelineItems = document.getElementById('storyTimelineItems');
+  const pinnedStoryTimelineItems = document.getElementById('pinnedStoryTimelineItems');
+  const pinnedMemoryTimeline = document.getElementById('pinnedMemoryTimeline');
   const undatedStoryItems = document.getElementById('undatedStoryItems');
   const undatedSection = document.getElementById('undatedStorySection');
   const featuredMemorySection = document.getElementById('featuredMemorySection');
@@ -293,7 +295,8 @@ function initMemoryBoard() {
 
   // ---------- HELPER: Build media path ----------
   function mediaPath(memory, mediaItem) {
-    return basePath + encodeURIComponent(memory.folder) + '/' + encodeURIComponent(mediaItem.filename);
+    return mediaItem.src ||
+      basePath + encodeURIComponent(memory.folder) + '/' + encodeURIComponent(mediaItem.filename);
   }
 
   // ---------- CATEGORY FILTERS ----------
@@ -413,19 +416,6 @@ function initMemoryBoard() {
 
     itemEl.appendChild(frame);
 
-    // If memory has multiple photos, show a little badge on the primary
-    if (index === 0 && count > 1 && !memory.featured) {
-      itemEl.classList.add('has-media-counter');
-      const badge = document.createElement('span');
-      badge.className = 'media-counter-tag';
-      const photoCount = memory.media.filter(item => item.type !== 'video').length;
-      const videoCount = memory.media.length - photoCount;
-      badge.textContent = videoCount
-        ? `${photoCount} photos · ${videoCount} videos`
-        : `${count} photos`;
-      itemEl.appendChild(badge);
-    }
-
     // Click opens physical photograph lightbox
     itemEl.addEventListener('click', () => openLightbox(memory, index));
     itemEl.addEventListener('keydown', (e) => {
@@ -482,11 +472,12 @@ function initMemoryBoard() {
     };
   }
 
-  function chooseMediaPattern(profile) {
+  function chooseMediaPattern(profile, memory) {
     const { count, landscapes, portraits, veryWide, veryTall } = profile;
     if (count <= 1) return 'single';
     if (count >= 8) return 'scattered';
     if (count === 3) return 'trio';
+    if (memory.layoutPattern === 'landscape-focus') return memory.layoutPattern;
 
     const mixedOrientations = landscapes > 0 && portraits > 0;
     const candidates = [
@@ -543,11 +534,28 @@ function initMemoryBoard() {
     return outliers.length > 0 && outliers.length < profile.count ? outliers.map(entry => entry.index) : [];
   }
 
+  function appendCompositionFooter(container, memory, count) {
+    if (count <= 1 || memory.featured) return;
+
+    const photoCount = memory.media.filter(item => item.type !== 'video').length;
+    const videoCount = memory.media.length - photoCount;
+    const footer = document.createElement('div');
+    footer.className = 'media-composition-footer';
+
+    const badge = document.createElement('span');
+    badge.className = 'media-counter-tag';
+    badge.textContent = videoCount
+      ? `${photoCount} photos · ${videoCount} videos`
+      : `${count} photos`;
+    footer.appendChild(badge);
+    container.appendChild(footer);
+  }
+
   function buildMediaComposition(memory) {
     const media = memory.media || [];
     const profile = getMediaProfile(media);
     const count = profile.count;
-    const pattern = chooseMediaPattern(profile);
+    const pattern = chooseMediaPattern(profile, memory);
     const container = document.createElement('div');
     const patternClass = pattern === 'pair-mixed'
       ? 'layout-pattern-pair layout-pattern-pair-mixed'
@@ -557,16 +565,19 @@ function initMemoryBoard() {
 
     if (pattern === 'single') {
       appendMediaItems(container, memory, profile, [0], count);
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
     if (pattern === 'pair' || pattern === 'pair-mixed') {
       appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
     if (pattern === 'trio') {
       appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
@@ -590,7 +601,40 @@ function initMemoryBoard() {
       const supportingItems = supportItems.filter(entry =>
         entry.shape !== 'portrait' && entry.shape !== 'very-tall'
       );
-      if (portraitItems.length === 1 && supportingItems.length >= 2) {
+      if (
+        memory.layoutPattern === 'landscape-focus' &&
+        portraitItems.length > 1 &&
+        supportingItems.length >= 2
+      ) {
+        container.classList.add('layout-pattern-balanced-focus');
+        support.classList.add('pattern-support-portrait-row-layout');
+
+        const portraitRow = document.createElement('div');
+        portraitRow.className = 'pattern-support-portrait-row';
+        appendMediaItems(
+          portraitRow,
+          memory,
+          profile,
+          portraitItems.map(entry => entry.index),
+          count
+        );
+        support.appendChild(portraitRow);
+
+        const landscapeRow = document.createElement('div');
+        landscapeRow.className = 'pattern-support-landscape-row';
+        appendMediaItems(
+          landscapeRow,
+          memory,
+          profile,
+          supportingItems.map(entry => entry.index),
+          count
+        );
+        support.appendChild(landscapeRow);
+        container.appendChild(support);
+        appendCompositionFooter(container, memory, count);
+        return container;
+      }
+      if (portraitItems.length > 0 && supportingItems.length >= 2) {
         const portraitRatio = portraitItems[0].ratio;
         const supportingHeightRatio = supportingItems.reduce(
           (total, entry) => total + 1 / entry.ratio,
@@ -615,6 +659,7 @@ function initMemoryBoard() {
         count
       );
       container.appendChild(support);
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
@@ -630,6 +675,7 @@ function initMemoryBoard() {
       supportRow.className = `pattern-support-row${supportCount >= 4 ? ' pattern-support-row-wide' : ''}`;
       appendMediaItems(supportRow, memory, profile, profile.items.slice(primaryCount).map(entry => entry.index), count);
       container.appendChild(supportRow);
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
@@ -649,10 +695,12 @@ function initMemoryBoard() {
         appendMediaItems(finalRow, memory, profile, finalRowIndexes, count);
         container.appendChild(finalRow);
       }
+      appendCompositionFooter(container, memory, count);
       return container;
     }
 
     appendMediaItems(container, memory, profile, profile.items.map(entry => entry.index), count);
+    appendCompositionFooter(container, memory, count);
     return container;
   }
 
@@ -728,6 +776,66 @@ function initMemoryBoard() {
     update();
   }
 
+  function createStoryMilestone(memory) {
+    const milestone = document.createElement('div');
+    milestone.className = 'story-milestone reveal';
+    if (memory.pinned) milestone.classList.add('pinned-side-right');
+    milestone.dataset.id = memory.id;
+    milestone.dataset.category = memory.category || '';
+
+    const node = document.createElement('div');
+    node.className = 'story-node';
+    milestone.appendChild(node);
+
+    const content = document.createElement('div');
+    content.className = 'story-milestone-content';
+    const header = document.createElement('div');
+    header.className = 'story-meta-header';
+
+    if (memory.displayDate) {
+      const dateTag = document.createElement('div');
+      dateTag.className = 'story-date-tag';
+      dateTag.textContent = memory.displayDate;
+      header.appendChild(dateTag);
+    }
+
+    const title = document.createElement('h3');
+    title.className = 'story-milestone-title';
+    title.textContent = memory.title;
+    header.appendChild(title);
+
+    if (memory.description) {
+      const desc = document.createElement('p');
+      desc.className = 'story-description-text';
+      desc.textContent = memory.description;
+      header.appendChild(desc);
+    }
+
+    if (memory.caption) {
+      const quote = document.createElement('div');
+      quote.className = 'story-caption-quote';
+      quote.textContent = memory.caption;
+      header.appendChild(quote);
+    }
+
+    content.appendChild(header);
+    const mediaComp = buildMediaComposition(memory);
+    content.appendChild(mediaComp);
+    updateCompositionAfterMediaMetadata(mediaComp, memory);
+    milestone.appendChild(content);
+    return milestone;
+  }
+
+  // ---------- RENDER PINNED PRE-RELATIONSHIP MEMORY ----------
+  function renderPinnedStory() {
+    if (!pinnedStoryTimelineItems || !pinnedMemoryTimeline) return;
+    const memory = MEMORIES.find(item => item.pinned && item.date === null);
+    if (!memory) return;
+
+    pinnedMemoryTimeline.hidden = false;
+    pinnedStoryTimelineItems.replaceChildren(createStoryMilestone(memory));
+  }
+
   // ---------- RENDER DATED STORY MILESTONES ----------
   function renderStoryTimeline() {
     if (!storyTimelineItems) return;
@@ -737,62 +845,8 @@ function initMemoryBoard() {
       .filter(m => m.date !== null)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    datedMemories.forEach((memory, idx) => {
-      const milestone = document.createElement('div');
-      milestone.className = 'story-milestone reveal';
-      milestone.dataset.id = memory.id;
-      milestone.dataset.category = memory.category || '';
-
-      // Center timeline node
-      const node = document.createElement('div');
-      node.className = 'story-node';
-      milestone.appendChild(node);
-
-      // Milestone content block
-      const content = document.createElement('div');
-      content.className = 'story-milestone-content';
-
-      // Header: Date + Title
-      const header = document.createElement('div');
-      header.className = 'story-meta-header';
-
-      if (memory.displayDate) {
-        const dateTag = document.createElement('div');
-        dateTag.className = 'story-date-tag';
-        dateTag.textContent = memory.displayDate;
-        header.appendChild(dateTag);
-      }
-
-      const title = document.createElement('h3');
-      title.className = 'story-milestone-title';
-      title.textContent = memory.title;
-      header.appendChild(title);
-
-      // Locked description
-      if (memory.description) {
-        const desc = document.createElement('p');
-        desc.className = 'story-description-text';
-        desc.textContent = memory.description;
-        header.appendChild(desc);
-      }
-
-      // Locked caption
-      if (memory.caption) {
-        const quote = document.createElement('div');
-        quote.className = 'story-caption-quote';
-        quote.textContent = memory.caption;
-        header.appendChild(quote);
-      }
-
-      content.appendChild(header);
-
-      // Integrated Media Composition
-      const mediaComp = buildMediaComposition(memory);
-      content.appendChild(mediaComp);
-      updateCompositionAfterMediaMetadata(mediaComp, memory);
-
-      milestone.appendChild(content);
-      storyTimelineItems.appendChild(milestone);
+    datedMemories.forEach(memory => {
+      storyTimelineItems.appendChild(createStoryMilestone(memory));
     });
   }
 
@@ -867,7 +921,7 @@ function initMemoryBoard() {
     if (!undatedStoryItems) return;
     undatedStoryItems.innerHTML = '';
 
-    const undatedMemories = MEMORIES.filter(m => m.date === null && !m.featured);
+    const undatedMemories = MEMORIES.filter(m => m.date === null && !m.featured && !m.pinned);
     if (undatedMemories.length === 0) {
       if (undatedSection) undatedSection.style.display = 'none';
       return;
@@ -1037,6 +1091,7 @@ function initMemoryBoard() {
   // ---------- INITIALIZATION ----------
   buildFilters();
   renderFeaturedMemory();
+  renderPinnedStory();
   renderStoryTimeline();
   renderUndatedStory();
   initTimelineVideoLifecycle();

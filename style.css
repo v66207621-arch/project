@@ -1109,6 +1109,15 @@ h1, h2, h3 {
   padding: 2rem 0 6rem 0;
 }
 
+@media (min-width: 1201px) {
+  .story-timeline-wrapper {
+    --expanded-timeline-width: min(calc(100% + 240px), calc(100vw - 48px));
+    width: var(--expanded-timeline-width);
+    max-width: none;
+    margin-inline: calc((100% - var(--expanded-timeline-width)) / 2);
+  }
+}
+
 .story-timeline-spine {
   position: absolute;
   left: 50%;
@@ -1137,6 +1146,10 @@ h1, h2, h3 {
 }
 
 .story-milestone:nth-child(even) {
+  justify-content: flex-end;
+}
+
+.story-milestone.pinned-side-right {
   justify-content: flex-end;
 }
 
@@ -1169,7 +1182,7 @@ h1, h2, h3 {
 
 /* Milestone Content Block */
 .story-milestone-content {
-  width: 45%;
+  width: 47.5%;
   position: relative;
 }
 
@@ -1313,9 +1326,6 @@ h1, h2, h3 {
 
 /* Little stamp showing photo count if more media exist */
 .media-counter-tag {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
   background: rgba(6, 5, 11, 0.78);
   backdrop-filter: blur(8px);
   color: #fff;
@@ -1325,8 +1335,13 @@ h1, h2, h3 {
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   letter-spacing: 0.5px;
-  pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.media-composition-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.65rem;
 }
 
 /* ====================================================== */
@@ -1425,19 +1440,26 @@ h1, h2, h3 {
   grid-column: 2;
 }
 
+.pattern-support-portrait-row-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pattern-support-portrait-row,
+.pattern-support-landscape-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.pattern-support-landscape-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .pattern-support-media .story-media-item {
   padding: 7px 7px 11px 7px;
-}
-
-.layout-pattern-balanced-focus .story-media-item.has-media-counter {
-  padding-bottom: 20px;
-}
-
-.layout-pattern-balanced-focus .has-media-counter .media-counter-tag {
-  bottom: 1px;
-  right: 7px;
-  font-size: 0.6rem;
-  padding: 0.08rem 0.4rem;
 }
 
 .layout-pattern-balanced {
@@ -1484,16 +1506,7 @@ h1, h2, h3 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* First Date keeps its established 3-over-4 editorial arrangement, with a
-   larger footprint so the photographs remain appreciable at timeline scale. */
-.story-media-composition[data-memory-folder="first date"] {
-  width: 110%;
-  max-width: none;
-  flex: 0 0 110%;
-  position: relative;
-  left: -24px;
-}
-
+/* First Date keeps its established 3-over-4 editorial arrangement. */
 .story-media-composition[data-memory-folder="first date"] .pattern-primary-row,
 .story-media-composition[data-memory-folder="first date"] .pattern-support-row {
   gap: 0.85rem;
@@ -2129,6 +2142,20 @@ h1, h2, h3 {
 
   .pattern-main-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pattern-support-portrait-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pattern-support-portrait-row .story-media-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: calc(50% - 0.5rem);
+    justify-self: center;
+  }
+
+  .pattern-support-landscape-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .undated-story-card {
